@@ -16,12 +16,16 @@ int foregroundOnlyMode = 0;
 // helper functions
 void foregroundOnlyToggle();
 void setIOValues(char**, char**, char**);
+char *replace_str(char *str, char *orig, char *rep);
 
 int main(){
     int exitFlag = 0;
     int counter = 0;
     int i = 0;
     int pid;
+    char* argument = NULL;
+    char stringPID[16];
+    sprintf(stringPID, "%ld", (long)getpid());
     char userInput[LINE_MAX_LENGTH];
     char* arguments[MAX_ARGS];
     char* inputFile = NULL;
@@ -53,6 +57,7 @@ int main(){
         token = NULL;
         inputFile = NULL;
         outputFile = NULL;
+        argument = NULL;
 
         // prompt for and read in input
         printf(": ");
@@ -65,11 +70,8 @@ int main(){
             // not a comment; process
             token = strtok(userInput, " \n");
             while(token != NULL){
-                if(strcmp(token, "$$") == 0){
-                    // replace token with pid
-                    sprintf(token, "%ld", (long)getpid());
-                }
-                arguments[counter] = token;
+                argument = replace_str(token, "$$", stringPID);
+                arguments[counter] = argument;
                 ++counter;
                 token = strtok(NULL, " \n");
             }
@@ -119,6 +121,10 @@ int main(){
                             iRedirect = dup2(inputFileOpener, 0);
                             close(inputFileOpener);
                         }
+                    } else {
+                        inputFileOpener = open("/dev/null", O_RDONLY);
+                        iRedirect = dup2(inputFileOpener, 0);
+                        close(inputFileOpener);
                     }
                     if(outputFile != NULL){
                         outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
@@ -173,12 +179,10 @@ void foregroundOnlyToggle(){
     if(foregroundOnlyMode == 0){
         // turn foregroundOnlyMode ON
         write(1, "Entering foreground-only mode (& is now ignored)\n", 49);
-        fflush(stdout);
         foregroundOnlyMode = 1;
     } else {
         // turn foregroundOnlyMode OFF
         write(1, "Exiting foreground-only mode\n", 29);
-        fflush(stdout);
         foregroundOnlyMode = 0;
     }
 }
@@ -211,4 +215,19 @@ void setIOValues(char** outputArg, char** inputArg, char** arguments){
         }
         ++i;
     }
+}
+
+char *replace_str(char *str, char *orig, char *rep){
+  static char buffer[4096];
+  char *p;
+
+  if(!(p = strstr(str, orig)))  // Is 'orig' even in 'str'?
+    return str;
+
+  strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
+  buffer[p-str] = '\0';
+
+  sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
+
+  return buffer;
 }
