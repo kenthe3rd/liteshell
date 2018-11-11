@@ -111,6 +111,12 @@ int main(){
                 pid = fork();
                 if(pid == 0){
                     // child-specific code
+                    if (strcmp(arguments[counter-1], "&") != 0 || foregroundOnlyMode){
+                        // child in foreground...allow for interrupts
+                        SIGINTHandler.sa_handler = SIG_DFL;
+                        SIGINTHandler.sa_flags = 0;
+                        sigaction(SIGINT, &SIGINTHandler, NULL);
+                    }
                     if(inputFile != NULL){
                         inputFileOpener = open(inputFile, O_RDONLY);
                         if(inputFileOpener == -1){
@@ -127,7 +133,7 @@ int main(){
                         close(inputFileOpener);
                     }
                     if(outputFile != NULL){
-                        outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                        outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                         if(outputFileOpener == -1){
                             perror("cannot open specified file for output\n");
                             fflush(stdout);
