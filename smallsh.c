@@ -185,6 +185,7 @@ void foregroundOnlyToggle(){
 
 void setIOValues(char** outputArg, char** inputArg, char** arguments){
     int i = 1;
+    int j;
     int foundOutput = 0;
     int foundInput = 0;
     // keep parsing while we still have arguments AND we haven't yet found value
@@ -192,10 +193,20 @@ void setIOValues(char** outputArg, char** inputArg, char** arguments){
     while( arguments[i] != NULL && (!foundOutput || !foundInput) ){
         if( !foundInput && strcmp(arguments[i], "<") == 0 ){
             *inputArg = arguments[i+1];
+            j = i;
+            while(arguments[j+1] != NULL){
+                arguments[j] = arguments[j+1];
+                ++j;
+            }
             foundInput = 1;
         }
         if ( !foundOutput && strcmp(arguments[i], ">") == 0 ){
             *outputArg = arguments[i+1];
+            j = i;
+            while(arguments[j+1] != NULL){
+                arguments[j] = arguments[j+1];
+                ++j;
+            }
             foundOutput = 1;
         }
         ++i;
