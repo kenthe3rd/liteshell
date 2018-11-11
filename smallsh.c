@@ -26,8 +26,10 @@ int main(){
     char* arguments[MAX_ARGS];
     char* inputFile = NULL;
     int inputFileOpener;
+    int iRedirect;
     char* outputFile = NULL;
     int outputFileOpener;
+    int oRedirect;
     char* token = NULL;
     struct sigaction SIGINTHandler;
     struct sigaction SIGSTPHandler;
@@ -110,22 +112,22 @@ int main(){
                     if(inputFile != NULL){
                         inputFileOpener = open(inputFile, O_RDONLY);
                         if(inputFileOpener == -1){
-                            printf("cannot open %s for input\n", inputFile);
+                            perror("cannot open specified file for input\n");
                             fflush(stdout);
                             exit(1);
                         } else {
-                            inputFileOpener = dup2(inputFileOpener, 0);
+                            iRedirect = dup2(inputFileOpener, 0);
                             close(inputFileOpener);
                         }
                     }
                     if(outputFile != NULL){
-                        outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                         if(outputFileOpener == -1){
-                            printf("cannot open %s for output\n", outputFile);
+                            perror("cannot open specified file for output\n");
                             fflush(stdout);
                             exit(1);
                         } else {
-                            outputFileOpener = dup2(outputFileOpener, 1);
+                            oRedirect = dup2(outputFileOpener, 1);
                             close(outputFileOpener);
                         }
                     }
