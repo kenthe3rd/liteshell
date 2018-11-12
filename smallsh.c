@@ -66,7 +66,7 @@ int main(){
         printf(": ");
         fflush(stdout);
         fgets(userInput, LINE_MAX_LENGTH, stdin);
-        if(userInput[0] == '#' || userInput[0] == '\n'){
+        if(userInput[0] == '#' || userInput[0] == '\n' || userInput[0] == '\0'){
             // input is a comment; ignore
             continue;
         } else {
