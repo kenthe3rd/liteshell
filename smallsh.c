@@ -15,7 +15,6 @@ int foregroundOnlyMode = 0;
 
 // helper functions
 void foregroundOnlyToggle();
-void setIOValues(char**, char**, char**);
 char *replace_str(char *str, char *orig, char *rep);
 
 int main(){
@@ -28,10 +27,10 @@ int main(){
     sprintf(stringPID, "%ld", (long)getpid());
     char userInput[LINE_MAX_LENGTH];
     char* arguments[MAX_ARGS];
-    char* inputFile = NULL;
+    char inputFile[1024];
     int inputFileOpener;
     int iRedirect;
-    char* outputFile = NULL;
+    char outputFile[1024];
     int outputFileOpener;
     int oRedirect;
     char* token = NULL;
@@ -52,11 +51,13 @@ int main(){
         for(counter=0; counter<MAX_ARGS; ++counter){
             arguments[counter] = NULL;
         }
+        for(i=0; i<1024; ++i){
+            inputFile[i] = '\0';
+            outputFile[i] = '\0';
+        }
         counter = 0;
         i = 0;
         token = NULL;
-        inputFile = NULL;
-        outputFile = NULL;
         argument = NULL;
 
         // prompt for and read in input
@@ -71,13 +72,21 @@ int main(){
             token = strtok(userInput, " \n");
             while(token != NULL){
                 argument = replace_str(token, "$$", stringPID);
+                if(strcmp(token, "<") == 0){
+                    token = strtok(NULL, " \n");
+                    argument = replace_str(token, "$$", stringPID);
+                    strcpy(inputFile, argument);
+                } else if(strcmp(token, ">") == 0){
+                    token = strtok(NULL, " \n");
+                    argument = replace_str(token, "$$", stringPID);
+                    strcpy(outputFile, argument);
+                }
                 arguments[counter] = argument;
                 ++counter;
                 token = strtok(NULL, " \n");
             }
 
             // parse arguments for io redirects
-            setIOValues(&outputFile, &inputFile, arguments);
 
             // BUILT-IN COMMANDS
             if(strcmp(arguments[0], "exit") == 0){
@@ -117,7 +126,7 @@ int main(){
                         SIGINTHandler.sa_flags = 0;
                         sigaction(SIGINT, &SIGINTHandler, NULL);
                     }
-                    if(inputFile != NULL){
+                    if(inputFile[0] != '\0'){
                         inputFileOpener = open(inputFile, O_RDONLY);
                         if(inputFileOpener == -1){
                             perror("cannot open specified file for input\n");
@@ -132,8 +141,8 @@ int main(){
                         iRedirect = dup2(inputFileOpener, 0);
                         close(inputFileOpener);
                     }
-                    if(outputFile != NULL){
-                        outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if(outputFile[0] != '\0'){
+                        outputFileOpener = open(outputFile, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                         if(outputFileOpener == -1){
                             perror("cannot open specified file for output\n");
                             fflush(stdout);
@@ -193,35 +202,7 @@ void foregroundOnlyToggle(){
     }
 }
 
-void setIOValues(char** outputArg, char** inputArg, char** arguments){
-    int i = 1;
-    int j;
-    int foundOutput = 0;
-    int foundInput = 0;
-    // keep parsing while we still have arguments AND we haven't yet found value
-    // for input or a value for output
-    while( arguments[i] != NULL && (!foundOutput || !foundInput) ){
-        if( !foundInput && strcmp(arguments[i], "<") == 0 ){
-            *inputArg = arguments[i+1];
-            j = i;
-            while(arguments[j+1] != NULL){
-                arguments[j] = arguments[j+1];
-                ++j;
-            }
-            foundInput = 1;
-        }
-        if ( !foundOutput && strcmp(arguments[i], ">") == 0 ){
-            *outputArg = arguments[i+1];
-            j = i;
-            while(arguments[j+1] != NULL){
-                arguments[j] = arguments[j+1];
-                ++j;
-            }
-            foundOutput = 1;
-        }
-        ++i;
-    }
-}
+
 
 char *replace_str(char *str, char *orig, char *rep){
   static char buffer[4096];
