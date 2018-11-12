@@ -73,16 +73,20 @@ int main(){
             while(token != NULL){
                 argument = replace_str(token, "$$", stringPID);
                 if(strcmp(token, "<") == 0){
+                    // process input redirect
                     token = strtok(NULL, " \n");
                     argument = replace_str(token, "$$", stringPID);
                     strcpy(inputFile, argument);
                 } else if(strcmp(token, ">") == 0){
+                    // process output redirect
                     token = strtok(NULL, " \n");
                     argument = replace_str(token, "$$", stringPID);
                     strcpy(outputFile, argument);
+                } else {
+                    // add an argument
+                    arguments[counter] = argument;
+                    ++counter;
                 }
-                arguments[counter] = argument;
-                ++counter;
                 token = strtok(NULL, " \n");
             }
 
