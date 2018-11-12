@@ -37,6 +37,7 @@ int main(){
     struct sigaction SIGINTHandler;
     struct sigaction SIGSTPHandler;
     int status = 0;
+    int backgroundRequest;
 
     // prevent CTRL-C/SIGINT from killing shell
     SIGINTHandler.sa_handler = SIG_IGN;
@@ -57,6 +58,7 @@ int main(){
         }
         counter = 0;
         i = 0;
+        backgroundRequest = 0;
         token = NULL;
         argument = NULL;
 
@@ -89,7 +91,11 @@ int main(){
                 }
                 token = strtok(NULL, " \n");
             }
-
+            if(strcmp(arguments[counter-1], "&") == 0){
+                // set the background request flag and strip & out of args
+                arguments[counter-1] = NULL;
+                backgroundRequest = 1;
+            }
             // parse arguments for io redirects
 
             // BUILT-IN COMMANDS
@@ -124,7 +130,7 @@ int main(){
                 pid = fork();
                 if(pid == 0){
                     // child-specific code
-                    if (strcmp(arguments[counter-1], "&") != 0 || foregroundOnlyMode){
+                    if (!backgroundRequest || foregroundOnlyMode){
                         // child in foreground...allow for interrupts
                         SIGINTHandler.sa_handler = SIG_DFL;
                         SIGINTHandler.sa_flags = 0;
@@ -169,7 +175,7 @@ int main(){
                     exit(1);
                 } else {
                     // parent-specific code
-                    if (strcmp(arguments[counter-1], "&") == 0 && !foregroundOnlyMode){
+                    if (backgroundRequest && !foregroundOnlyMode){
                         // run the command in the background (don't wait for it)
                         printf("background pid is %d\n", pid);
                         fflush(stdout);
@@ -207,7 +213,8 @@ void foregroundOnlyToggle(){
 }
 
 
-
+// stolen from
+// https://www.linuxquestions.org/questions/programming-9/replace-a-substring-with-another-string-in-c-170076/
 char *replace_str(char *str, char *orig, char *rep){
   static char buffer[4096];
   char *p;
